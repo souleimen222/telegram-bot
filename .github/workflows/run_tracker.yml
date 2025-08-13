@@ -3,7 +3,7 @@ name: Run PL Twitter Tracker
 on:
   schedule:
     # Runs every day at 12:35 PM local time (adjust UTC if needed)
-    - cron: '30 14 * * *'  # 14:28 UTC = 15:28 Tunisia time
+    - cron: '45 18 * * *'  # 18:45 UTC = 17:45 Tunisia time
   workflow_dispatch:  # allows manual run
 
 jobs:
