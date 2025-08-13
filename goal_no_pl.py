@@ -4,6 +4,8 @@ from sofascore_wrapper.api import SofascoreAPI
 import aiohttp
 import sys
 sys.stdout.reconfigure(line_buffering=True)
+import time
+
 
 
 # ==== CONFIG ====
@@ -244,11 +246,18 @@ async def check_full_time(api, match):
 async def main():
     api = SofascoreAPI()
     print("Starting Premier League live match tracker...")
+    runtime_minutes = 150  # 2.5 hours
+    start_time = time.time()
+
     try:
         
         while True:
-            matches = await get_live_matches(api)
+            # Stop the loop if runtime exceeded
+            if (time.time() - start_time) > runtime_minutes * 60:
+                print("Time limit reached. Stopping tracker...")
+                break
 
+            matches = await get_live_matches(api)
 
             if matches:
                 new_pl_matches = [m for m in matches if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS]
