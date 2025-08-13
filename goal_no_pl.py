@@ -247,10 +247,8 @@ async def main():
             matches = await get_live_matches(api)
 
             if matches:
-                pl_matches = [
-                    m for m in matches
-                    if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS
-                ]
+                #pl_matches = [m for m in matches if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS]
+                pl_matches=matches[:3]
                 if pl_matches:
                     for match in pl_matches:
                         if match["id"] not in posted_lineups:
