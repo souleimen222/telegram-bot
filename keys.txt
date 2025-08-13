@@ -1,0 +1,11 @@
+api key:iCEFurzQSePObFMnDAqOoKMQI
+api key secret:iM3fL8uRUT2892gnW376qbhVMbyyzpx6lHB0h9wcUkQN6hwR41
+bearer token:AAAAAAAAAAAAAAAAAAAAAKgY3gEAAAAAo8%2FUrFPjsfKmHsFMJfE3veGk%2FRs%3DOl5QasogDQgZwoJootNel8o5yUo6byt332JilVjHzF6VeHgd0p
+acces token:1954841591878680576-TWH4g9MTPN8Ds2sKn3VzGsnYVXJzkm
+acces token secret:D9BACcvpTZnOr0nQ72HffrZOO6B5CrSwhMvOL5z2qsYOo
+
+
+
+RAPIDAPI_KEY = 'f4f731ebe2ce5c2b0cb6a0f67d1c0c5c'
+
+telegram token :8367254953:AAESxN8LQFNDkjFxUIRUJ5vxoP-dU5sjqe4
