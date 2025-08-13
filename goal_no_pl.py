@@ -2,6 +2,9 @@ import asyncio
 import tweepy
 from sofascore_wrapper.api import SofascoreAPI
 import aiohttp
+import sys
+sys.stdout.reconfigure(line_buffering=True)
+
 
 # ==== CONFIG ====
 PREMIER_LEAGUE_TEAMS = {
