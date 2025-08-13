@@ -37,7 +37,7 @@ seen_incidents = set()
 posted_lineups = set()
 posted_results = set()  # FT posted matches
 posted_half_times = set()  # HT posted matches
-
+pl_matches = []
 
 async def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -167,9 +167,9 @@ async def check_half_time(api, match):
         return
 
     match_data = await api._get(f"/event/{match_id}")
-    status = match_data["event"]["status"]["type"]
+    status = match_data["event"]["status"]["description"]
 
-    if status == "half-time":
+    if status == "Halftime":
         posted_half_times.add(match_id)
 
         home_team = match_data["event"]["homeTeam"]["shortName"]
@@ -210,6 +210,8 @@ async def check_full_time(api, match):
 
     if status == "finished":
         posted_results.add(match_id)
+        fpl_matches = [m for m in fpl_matches if m["id"] != match_id]
+
 
         home_team = match_data["event"]["homeTeam"]["shortName"]
         away_team = match_data["event"]["awayTeam"]["shortName"]
@@ -243,12 +245,18 @@ async def main():
     api = SofascoreAPI()
     print("Starting Premier League live match tracker...")
     try:
+        
         while True:
             matches = await get_live_matches(api)
 
+
             if matches:
-                #pl_matches = [m for m in matches if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS]
-                pl_matches=matches[:3]
+                new_pl_matches = [m for m in matches if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS]
+                #new_pl_matches=matches[:3]
+                existing_ids = {m["id"] for m in pl_matches}
+
+                pl_matches.extend(m for m in new_pl_matches if m["id"] not in existing_ids)
+
                 if pl_matches:
                     for match in pl_matches:
                         if match["id"] not in posted_lineups:
