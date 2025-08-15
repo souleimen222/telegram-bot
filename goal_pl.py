@@ -22,15 +22,26 @@ def url_to_df(url,key=None):
       print(f"Error: {response.status_code}")
 
 def get_num_gw():
-    present_fixtures=url_to_df('https://fantasy.premierleague.com/api/fixtures/?future=1')
-    num_gw=present_fixtures['event'].min()
-    fixtures=url_to_df('https://fantasy.premierleague.com/api/fixtures')
-    fixtures=fixtures[fixtures['event']==num_gw-1]
-    if not fixtures.empty:
-        if fixtures.iloc[-1]['finished'] == False:
-            num_gw -= 1
+    present_fixtures = url_to_df('https://fantasy.premierleague.com/api/fixtures/?future=1')
+    
+    if present_fixtures.empty:
+        print("⚠ No present fixtures found — defaulting to GW=1")
+        return 1
+    
+    num_gw = present_fixtures['event'].min()
+    
+    fixtures = url_to_df('https://fantasy.premierleague.com/api/fixtures')
+    fixtures = fixtures[fixtures['event'] == num_gw - 1]
+    
+    if fixtures.empty:
+        print(f"⚠ No fixtures found for GW {num_gw - 1} — using GW {num_gw}")
+        return num_gw
+
+    if fixtures.iloc[-1].get('finished') is False:
+        num_gw -= 1
 
     return num_gw
+
 
 def prepare_stats(id,gw):
   game=gw[gw['id']==id]['stats']
@@ -185,74 +196,49 @@ def split_text_into_tweets(text, limit=280):
         tweets.append(current_tweet.strip('\n'))
     return tweets
 
-def post_bonuses(tweet_text):
-    bearer_token = os.getenv('BEARER_TOKEN')
-    consumer_key =  os.getenv('CONSUMER_KEY')
-    consumer_secret = os.getenv('CONSUMER_SECRET')
-    access_token = os.getenv('ACCESS_TOKEN')
-    access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
-    TOKEN=os.getenv('TOKEN')
-    CHANNEL_ID=os.getenv('CHANNEL_ID')
-    url = f'https://api.telegram.org/bot{TOKEN}/sendMessage'
-    client = tweepy.Client(bearer_token=bearer_token, consumer_key=consumer_key, consumer_secret=consumer_secret,
-                           access_token=access_token, access_token_secret=access_token_secret)
-    telegram_text=tweet_text.replace('|', "")
-    params = {'chat_id': CHANNEL_ID,'text': telegram_text}
-    telegram = requests.post(url, params=params)
-    tweets = split_text_into_tweets(tweet_text)
-    last_tweet = client.create_tweet(text=tweets[0])
-    print(f"Posted tweet:--------------------------------------------------------------------------------------\n{tweets[0]}")
-    for tweet in tweets[1:]:
-        last_tweet = client.create_tweet(text=tweet, in_reply_to_tweet_id=last_tweet.data['id'])
-        print(f"Posted tweet in thread:------------------------------------------------------------------------\n{tweet}")
+TOKEN = "8367254953:AAESxN8LQFNDkjFxUIRUJ5vxoP-dU5sjqe4"
+CHANNEL_ID = "@FPL_EDITS"
+def post_bonuses(message_text):
 
-def post(tweet_text):
-    bearer_token = os.getenv('BEARER_TOKEN')
-    consumer_key =  os.getenv('CONSUMER_KEY')
-    consumer_secret = os.getenv('CONSUMER_SECRET')
-    access_token = os.getenv('ACCESS_TOKEN')
-    access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
-    TOKEN=os.getenv('TOKEN')
-    CHANNEL_ID=os.getenv('CHANNEL_ID')
+    url = f'https://api.telegram.org/bot{TOKEN}/sendMessage'
+    telegram_text = message_text.replace('|', "")
+    params = {'chat_id': CHANNEL_ID, 'text': telegram_text}
+    response = requests.post(url, params=params)
+    print(f"Posted Telegram message:\n{telegram_text}")
+    return response.json()
+
+def post(message_text):
+    TOKEN = os.getenv('TOKEN')
+    CHANNEL_ID = os.getenv('CHANNEL_ID')
     url = f'https://api.telegram.org/bot{TOKEN}/sendMessage'
 
-    telegram_text=tweet_text.replace('|', "")
-    params = {'chat_id': CHANNEL_ID,'text': telegram_text}
+    telegram_text = message_text.replace('|', "")
+    params = {'chat_id': CHANNEL_ID, 'text': telegram_text}
 
     try:
         telegram = requests.post(url, params=params)
         message_data = telegram.json()
         message_id = message_data['result']['message_id']
-        message_text=message_data['result']['text']
-    
-        client = tweepy.Client(bearer_token=bearer_token, consumer_key=consumer_key, consumer_secret=consumer_secret,
-                        access_token=access_token, access_token_secret=access_token_secret)
-        last_tweet = client.create_tweet(text=tweet_text)
-        time.sleep(2)
-        return last_tweet,message_id,message_text
+        message_text = message_data['result']['text']
+        time.sleep(1)
+        return message_id, message_text
     except Exception as e:
-        print(e)
+        print("Telegram post failed:", e)
 
-def post_reply(last_tweet,tweet_text):
-    bearer_token = os.getenv('BEARER_TOKEN')
-    consumer_key =  os.getenv('CONSUMER_KEY')
-    consumer_secret = os.getenv('CONSUMER_SECRET')
-    access_token = os.getenv('ACCESS_TOKEN')
-    access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
-    TOKEN=os.getenv('TOKEN')
-    CHANNEL_ID=os.getenv('CHANNEL_ID')
+def post_reply(last_message, reply_text):
+    TOKEN = os.getenv('TOKEN')
+    CHANNEL_ID = os.getenv('CHANNEL_ID')
 
-    client = tweepy.Client(bearer_token=bearer_token, consumer_key=consumer_key, consumer_secret=consumer_secret,
-                        access_token=access_token, access_token_secret=access_token_secret)
-    try:
-        tweet = client.create_tweet(text=tweet_text, in_reply_to_tweet_id=last_tweet[0].data['id'])
-    except Exception as e:
-        print(e)
-    new_message=last_tweet[3]+'\n\n'+tweet_text
-    edit_params = {'chat_id': CHANNEL_ID,'message_id': last_tweet[1],'text': new_message}
+    new_message = last_message[1] + '\n\n' + reply_text
+    edit_params = {'chat_id': CHANNEL_ID, 'message_id': last_message[0], 'text': new_message}
     new_url = f'https://api.telegram.org/bot{TOKEN}/editMessageText'
-    edit_response = requests.post(new_url, params=edit_params)
-    print('edited this post\n',new_message)
+
+    try:
+        edit_response = requests.post(new_url, params=edit_params)
+        print(f"Edited Telegram message:\n{new_message}")
+        return edit_response.json()
+    except Exception as e:
+        print("Telegram edit failed:", e)
 
 def get_upcoming_games():
   num_gw=get_num_gw()
@@ -282,6 +268,9 @@ teams_short_names=dict(zip(teams['id'],teams['short_name']))
 teams_short_names=pd.DataFrame(teams_short_names,index=[0])
 
 upcoming_games=get_upcoming_games()
+if not upcoming_games:
+    print("No upcoming games found. Exiting.")
+    exit()
 num_gw=get_num_gw()
 num_of_match=upcoming_games[-1]
 
@@ -297,6 +286,9 @@ last_goals,last_pen,no_assist,no_save,cnt,rc={},{},{},{},0,''
 new_gw=live_gws(num_gw,upcoming_games)
 # set of matches begins
 while True:
+    if time.time() % 300 < 10:  # Every ~5 minutes
+        upcoming_games = get_upcoming_games()
+
     old_gw=new_gw
     time.sleep(10)
     new_gw=live_gws(num_gw,upcoming_games)

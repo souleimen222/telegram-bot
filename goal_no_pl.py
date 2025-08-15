@@ -5,6 +5,8 @@ import aiohttp
 import sys
 sys.stdout.reconfigure(line_buffering=True)
 import time
+from datetime import datetime, timezone
+
 
 
 
@@ -39,7 +41,7 @@ seen_incidents = set()
 posted_lineups = set()
 posted_results = set()  # FT posted matches
 posted_half_times = set()  # HT posted matches
-pl_matches = []
+old_pl_ids=[]
 
 async def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -83,8 +85,13 @@ async def get_live_matches(api):
     data = await api._get("/sport/football/events/live")
     return data.get("events", [])
 
+async def get_today_matches(api):
+    date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    data = await api._get(f"/sport/football/scheduled-events/{date_str}")
+    return data.get("events", [])
 
-async def post_lineup_or_start(api, match):
+
+async def post_lineup(api, match):
     match_id = match["id"]
     if match_id in posted_lineups:
         return
@@ -94,25 +101,27 @@ async def post_lineup_or_start(api, match):
     home_code = match.get("homeTeam", {}).get("nameCode", "")
     away_code = match.get("awayTeam", {}).get("nameCode", "")
     tournament_name = match.get("tournament", {}).get("name", "")
-
-    posted_lineups.add(match_id)
-    try:
-        lineup_data = await api._get(f"/event/{match_id}/lineups")
+    status = match["status"]["description"]
+    
+    
+    lineup_data = await api._get(f"/event/{match_id}/lineups")
+    if lineup_data and "error" not in lineup_data:
         if lineup_data.get("confirmed") and "home" in lineup_data and "away" in lineup_data:
+            posted_lineups.add(match_id)
             home_players = [p["player"]["shortName"] for p in lineup_data["home"].get("players", []) if not p.get("substitute")]
             away_players = [p["player"]["shortName"] for p in lineup_data["away"].get("players", []) if not p.get("substitute")]
 
             lineup_text = (
-                f"📋 Starting Lineups\n"
-                f"{home_team} ({home_code}):\n" + ", ".join(home_players) + "\n\n"
-                f"{away_team} ({away_code}):\n" + ", ".join(away_players) + "\n\n"
+                f"📋 {home_team} vs {away_team} Team News : \n"
+                f"{home_team} XI : " + ", ".join(home_players) + "\n\n"
+                f"{away_team} XI : " + ", ".join(away_players) + "\n\n"
                 f"{format_hashtags(home_code, away_code, tournament_name)}"
             )
             post(lineup_text)
-        else:
-            post(f"🏟 The game begins!\n{format_hashtags(home_code, away_code, tournament_name)}")
-    except Exception:
-        post(f"🏟 The game begins!\n{format_hashtags(home_code, away_code, tournament_name)}")
+            return
+    if status!="Not started":
+        posted_lineups.add(match_id)
+
 
 
 async def check_incidents(api, match):
@@ -128,19 +137,31 @@ async def check_incidents(api, match):
 
     for inc in incidents:
         inc_id = inc.get("id")
+        incident_type = inc.get("incidentType")
+
         if not inc_id or inc_id in seen_incidents:
             continue
+
+        if incident_type == "goal" or incident_type == "penalty" :
+            await asyncio.sleep(15)
+
+            data = await api._get(f"/event/{match_id}/incidents")
+            updated_inc = next((i for i in data.get("incidents", []) if i.get("id") == inc_id), None)
+            if not updated_inc:
+                continue
+        else:
+            updated_inc=inc
+
         seen_incidents.add(inc_id)
-
-        minute = inc.get("time", {}).get("minute") if isinstance(inc.get("time"), dict) else inc.get("time")
+        minute = updated_inc.get("time", {}).get("minute") if isinstance(updated_inc.get("time"), dict) else updated_inc.get("time")
         if minute is None:
-            minute = inc.get("minute", "?")
+            minute = updated_inc.get("minute", "?")
 
-        incident_type = inc.get("incidentType")
-        scorer = clean_name(inc.get("playerName") or inc.get("player", {}).get("shortName", ""))
-        assist = clean_name(inc.get("assist1", {}).get("shortName") if "assist1" in inc else "")
+        incident_type = updated_inc.get("incidentType")
+        scorer = clean_name(updated_inc.get("playerName") or updated_inc.get("player", {}).get("shortName", ""))
+        assist = clean_name(updated_inc.get("assist1", {}).get("shortName") if "assist1" in updated_inc else "")
 
-        score = f'{home_team} {inc.get("homeScore")}-{inc.get("awayScore")} {away_team} ({minute}")'
+        score = f'{home_team} {updated_inc.get("homeScore")}-{updated_inc.get("awayScore")} {away_team} ({minute}")'
         hashtags = format_hashtags(home_code, away_code, tournament_name)
 
         if incident_type == "goal":
@@ -149,17 +170,17 @@ async def check_incidents(api, match):
                 text += f"\n🅰️ Assist: {assist}"
             else:
                 text += f"\n🅰️ Assist:-"
-            text += f"\n{score}\n{hashtags}"
+            text += f"\n\n{score}\n{hashtags}"
             post(text)
 
         elif incident_type == "penalty":
             text = f"✅ PENALTY GOAL: {scorer}" if scorer else "✅ PENALTY GOAL!"
-            text += f"\n{score}\n{hashtags}"
+            text += f"\n\n{score}\n{hashtags}"
             post(text)
 
-        elif incident_type == "inGamePenalty" and inc.get("incidentClass") == "missed":
+        elif incident_type == "inGamePenalty" and updated_inc.get("incidentClass") == "missed":
             text = f"❌ PENALTY MISSED: {scorer}" if scorer else "❌ PENALTY MISSED!"
-            text += f"\n{score}\n{hashtags}"
+            text += f"\n\n{score}\n{hashtags}"
             post(text)
 
 
@@ -212,8 +233,6 @@ async def check_full_time(api, match):
 
     if status == "finished":
         posted_results.add(match_id)
-        fpl_matches = [m for m in fpl_matches if m["id"] != match_id]
-
 
         home_team = match_data["event"]["homeTeam"]["shortName"]
         away_team = match_data["event"]["awayTeam"]["shortName"]
@@ -242,13 +261,18 @@ async def check_full_time(api, match):
         text = f"🏁 FT: {score_line}\n\n{goals_text}\n\n{hashtags}"
         post(text)
 
+# And define handle_match like:
+async def handle_match(api, match):
+    await post_lineup(api, match)
+    await check_incidents(api, match)
+    await check_half_time(api, match)
+    await check_full_time(api, match)
 
 async def main():
     api = SofascoreAPI()
     print("Starting Premier League live match tracker...")
-    runtime_minutes = 150  # 2.5 hours
+    runtime_minutes = 3*60+15  # 3:15 hours
     start_time = time.time()
-
     try:
         
         while True:
@@ -257,26 +281,28 @@ async def main():
                 print("Time limit reached. Stopping tracker...")
                 break
 
-            matches = await get_live_matches(api)
+            matches = await get_today_matches(api)
 
-            if matches:
-                new_pl_matches = [m for m in matches if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS]
-                #new_pl_matches=matches[:3]
-                existing_ids = {m["id"] for m in pl_matches}
+            now_ts = int(time.time())  # current Unix timestamp
+            now_matches = [m for m in matches if now_ts - 3*3600 <= m.get("startTimestamp", 0) <= now_ts + 1*3600]
 
-                pl_matches.extend(m for m in new_pl_matches if m["id"] not in existing_ids)
+            if  now_matches:
+                pl_matches = [m for m in now_matches if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS]
+                pl_matches = [m for m in pl_matches if m["tournament"]["name"] != "Premier League"]
+
+                new_pl_ids = [match["id"] for match in pl_matches]
+                if any(mid not in old_pl_ids for mid in new_pl_ids):
+                    start_time = time.time()
+                old_pl_ids=new_pl_ids
 
                 if pl_matches:
-                    for match in pl_matches:
-                        if match["id"] not in posted_lineups:
-                            await post_lineup_or_start(api, match)
-                        await check_incidents(api, match)
-                        await check_half_time(api, match)
-                        await check_full_time(api, match)
+                    tasks = [handle_match(api, match) for match in pl_matches]
+                    await asyncio.gather(*tasks)
+
                 else:
-                    print("No live Premier League matches right now.")
+                    print("No  Premier League matches right now.")
             else:
-                print("No live matches at the moment.")
+                print("No live matches right now.")
             await asyncio.sleep(15)
     except KeyboardInterrupt:
         print("Stopping...")
@@ -286,3 +312,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

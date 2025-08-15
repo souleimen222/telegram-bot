@@ -1,14 +1,21 @@
-name: Run PL Twitter Tracker
+name: Check PL Games and Trigger Tracker
 
 on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes UTC
+  workflow_dispatch:  # Allows manual run
 
-  workflow_dispatch:  # allows manual run
+concurrency:
+  group: pl-tracker  # all runs in this group are mutually exclusive
+  cancel-in-progress: false  # prevent starting a new run if one is still active
+
 
 jobs:
-  run-tracker:
+  check-pl:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -24,7 +31,7 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install --with-deps
 
-      - name: Run Tracker
+      - name: Run PL game checker
         env:
           TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
           TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
@@ -33,4 +40,4 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python goal_no_pl.py
+          python check_no_pl_game.py

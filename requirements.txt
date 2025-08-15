@@ -1,3 +1,7 @@
+requests
+numpy
+pandas
 tweepy
 sofascore-wrapper
 aiohttp
+python-dateutil
