@@ -6,7 +6,7 @@ on:
   workflow_dispatch:  # Allows manual run
 
 concurrency:
-  group: pl-tracker  # all runs in this group are mutually exclusive
+  group: np-pl-tracker  # all runs in this group are mutually exclusive
   cancel-in-progress: false  # prevent starting a new run if one is still active
 
 

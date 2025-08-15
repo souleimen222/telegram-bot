@@ -70,7 +70,7 @@ def prepare(num_gw):
     gw_matches['team_h_score']=gw_matches['team_h_score'].astype(int)
     gw_matches['kickoff_time'] = pd.to_datetime(gw_matches['kickoff_time']).dt.tz_localize(None)
     current_time = datetime.now().replace(microsecond=0) 
-    # current_time=current_time-timedelta(hours=1)
+    current_time=current_time-timedelta(hours=1)
     gw_matches['waiting_time']=gw_matches['kickoff_time']-current_time
     gw_matches['waiting_time']=(gw_matches['waiting_time'].apply(lambda x:x.total_seconds())).astype(int)
     return gw_matches
@@ -287,7 +287,11 @@ new_gw=live_gws(num_gw,upcoming_games)
 # set of matches begins
 while True:
     if time.time() % 300 < 10:  # Every ~5 minutes
-        upcoming_games = get_upcoming_games()
+        new_games = get_upcoming_games()
+        # Add only games that are not already in upcoming_games
+        for game in new_games:
+            if game not in upcoming_games:
+                upcoming_games.append(game)
 
     old_gw=new_gw
     time.sleep(10)
