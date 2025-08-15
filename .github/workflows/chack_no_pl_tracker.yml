@@ -1,4 +1,4 @@
-name: Check PL Games and Trigger Tracker
+name: Check no PL Games 
 
 on:
   schedule:
