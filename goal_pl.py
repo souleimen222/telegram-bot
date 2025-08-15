@@ -241,17 +241,24 @@ def post_reply(last_message, reply_text):
         print("Telegram edit failed:", e)
 
 def get_upcoming_games():
-  num_gw=get_num_gw()
-  present_fixtures=url_to_df('https://fantasy.premierleague.com/api/fixtures')
-  present_fixtures=present_fixtures[present_fixtures['event']==num_gw]
-  present_fixtures['kickoff_time']=pd.to_datetime(present_fixtures['kickoff_time'])
-  present_fixtures['kickoff_time']=present_fixtures['kickoff_time']-pd.to_timedelta(1, unit='h')
-  current_time=pd.Timestamp.now(tz='UTC')
-  past_time=current_time-pd.to_timedelta(120, unit='m')
-  new_games=present_fixtures[present_fixtures['kickoff_time']<current_time].index.values.tolist()
-  old_games=present_fixtures[present_fixtures['kickoff_time']<past_time].index.values.tolist()
-  games=[game%10 for game in new_games if game not in old_games]
-  return games
+    num_gw = get_num_gw()
+    present_fixtures = url_to_df('https://fantasy.premierleague.com/api/fixtures')
+    present_fixtures = present_fixtures[present_fixtures['event'] == num_gw]
+    present_fixtures['kickoff_time'] = pd.to_datetime(present_fixtures['kickoff_time'])
+    present_fixtures['kickoff_time'] = present_fixtures['kickoff_time'] - pd.to_timedelta(1, unit='h')  # Tunisia time
+
+    current_time = pd.Timestamp.now(tz='UTC')
+    future_time = current_time + pd.to_timedelta(15, unit='m')  # 15 minutes from now
+
+    # Select games starting within the next 15 minutes
+    upcoming = present_fixtures[
+        (present_fixtures['kickoff_time'] >= current_time) &
+        (present_fixtures['kickoff_time'] <= future_time)
+    ]
+
+    games = [game % 10 for game in upcoming.index.values.tolist()]
+    return games
+
 
 emoji={'yellow_cards':'🟨 YELLOW CARD: ','red_cards':'🟥 RED CARD: ','penalties_missed':'❌ PENALTY MISSED : ','penalties_saved':'🧤 PENALTY SAVED :','goals_scored':'⚽️ GOAL :','assists':'🅰️ Assist :','own_goals':'⚽️ OWN GOAL :'}
 players=url_to_df('https://fantasy.premierleague.com/api/bootstrap-static/','elements')
