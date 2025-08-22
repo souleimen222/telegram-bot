@@ -288,7 +288,7 @@ async def main():
 
             if  now_matches:
                 pl_matches = [m for m in now_matches if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS]
-                pl_matches = [m for m in pl_matches if m["tournament"]["name"] != "Premier League"]
+                #pl_matches = [m for m in pl_matches if m["tournament"]["name"] != "Premier League"]
 
                 new_pl_ids = [match["id"] for match in pl_matches]
                 if any(mid not in old_pl_ids for mid in new_pl_ids):
