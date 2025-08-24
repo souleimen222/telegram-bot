@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: np-pl-tracker  # all runs in this group are mutually exclusive
-  cancel-in-progress: false  # prevent starting a new run if one is still active
+  cancel-in-progress: true  # prevent starting a new run if one is still active
 
 
 jobs:
