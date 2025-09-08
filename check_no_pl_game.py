@@ -16,7 +16,10 @@ async def check_pl_games():
     try:
         # Today's date in UTC
         date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        data = await api._get(f"/sport/football/scheduled-events/{date_str}")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        }
+        data = await api._get(f"/sport/football/scheduled-events/{date_str}", headers=headers)
         events = data.get("events", [])
 
         now_ts = int(datetime.now(timezone.utc).timestamp())
