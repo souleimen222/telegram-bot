@@ -26,13 +26,6 @@ jobs:
           name: Run PL game checker
           command: |
             python check_no_pl_game.py
-          environment:
-            TWITTER_API_KEY: << pipeline.parameters.TWITTER_API_KEY >>
-            TWITTER_API_SECRET: << pipeline.parameters.TWITTER_API_SECRET >>
-            TWITTER_ACCESS_TOKEN: << pipeline.parameters.TWITTER_ACCESS_TOKEN >>
-            TWITTER_ACCESS_SECRET: << pipeline.parameters.TWITTER_ACCESS_SECRET >>
-            TELEGRAM_BOT_TOKEN: << pipeline.parameters.TELEGRAM_BOT_TOKEN >>
-            TELEGRAM_CHAT_ID: << pipeline.parameters.TELEGRAM_CHAT_ID >>
 
 workflows:
   scheduled:
