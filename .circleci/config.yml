@@ -28,13 +28,7 @@ jobs:
             python check_no_pl_game.py
 
 workflows:
+  version: 2
   check-pl-schedule:
-    triggers:
-      - schedule:
-          cron: "*/15 * * * *"  # every 15 minutes UTC
-          filters:
-            branches:
-              only:
-                - main
     jobs:
       - check-pl
