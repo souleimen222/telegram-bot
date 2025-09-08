@@ -31,10 +31,10 @@ workflows:
   scheduled:
     triggers:
       - schedule:
-          # CircleCI uses standard cron syntax (UTC)
-          cron: "*/15 * * * *"    # every 15 minutes
+          cron: "*/15 * * * *"   # every 15 minutes UTC
           filters:
             branches:
-              only: main
+              only:
+                - main
     jobs:
       - check-pl
