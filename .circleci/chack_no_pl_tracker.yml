@@ -1,43 +1,47 @@
-name: Check no PL Games 
-
-on:
-  schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes UTC
-  workflow_dispatch:  # Allows manual run
-
-concurrency:
-  group: np-pl-tracker  # all runs in this group are mutually exclusive
-  cancel-in-progress: true  # prevent starting a new run if one is still active
-
+version: 2.1
 
 jobs:
   check-pl:
-    runs-on: ubuntu-latest
-
+    docker:
+      - image: cimg/python:3.11   # python 3.11 on ubuntu
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - checkout
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+      - run:
+          name: Upgrade pip
+          command: |
+            python -m pip install --upgrade pip
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - run:
+          name: Install dependencies
+          command: |
+            pip install -r requirements.txt
 
-      - name: Install Playwright browsers
-        run: playwright install --with-deps
+      - run:
+          name: Install Playwright browsers
+          command: |
+            playwright install --with-deps
 
-      - name: Run PL game checker
-        env:
-          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
-          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
-          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
-          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python check_no_pl_game.py
+      - run:
+          name: Run PL game checker
+          command: |
+            python check_no_pl_game.py
+          environment:
+            TWITTER_API_KEY: << pipeline.parameters.TWITTER_API_KEY >>
+            TWITTER_API_SECRET: << pipeline.parameters.TWITTER_API_SECRET >>
+            TWITTER_ACCESS_TOKEN: << pipeline.parameters.TWITTER_ACCESS_TOKEN >>
+            TWITTER_ACCESS_SECRET: << pipeline.parameters.TWITTER_ACCESS_SECRET >>
+            TELEGRAM_BOT_TOKEN: << pipeline.parameters.TELEGRAM_BOT_TOKEN >>
+            TELEGRAM_CHAT_ID: << pipeline.parameters.TELEGRAM_CHAT_ID >>
+
+workflows:
+  scheduled:
+    triggers:
+      - schedule:
+          # CircleCI uses standard cron syntax (UTC)
+          cron: "*/15 * * * *"    # every 15 minutes
+          filters:
+            branches:
+              only: main
+    jobs:
+      - check-pl
