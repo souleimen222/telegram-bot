@@ -28,13 +28,15 @@ jobs:
             python check_no_pl_game.py
 
 workflows:
-  scheduled:
+  check-pl-schedule:
     triggers:
       - schedule:
-          cron: "*/15 * * * *"   # every 15 minutes UTC
+          cron: "*/15 * * * *"
           filters:
             branches:
               only:
                 - main
+          # explicitly set time zone to UTC
+          type: time
     jobs:
       - check-pl
