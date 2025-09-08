@@ -31,12 +31,10 @@ workflows:
   check-pl-schedule:
     triggers:
       - schedule:
-          cron: "*/15 * * * *"
+          cron: "*/15 * * * *"  # every 15 minutes UTC
           filters:
             branches:
               only:
                 - main
-          # explicitly set time zone to UTC
-          type: time
     jobs:
       - check-pl
