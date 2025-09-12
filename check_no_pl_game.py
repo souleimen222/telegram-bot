@@ -21,7 +21,7 @@ async def check_pl_games():
         events = data.get("events", [])
 
         now_ts = int(datetime.now(timezone.utc).timestamp())
-        time_window_seconds = 75 * 60  # 1 hour 15 minutes
+        time_window_seconds = 60 * 60  # 1 hour 15 minutes
 
         for match in events:
             home = match.get("homeTeam", {}).get("name")
