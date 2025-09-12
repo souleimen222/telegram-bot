@@ -1,9 +1,9 @@
 name: Check no PL Games 
 
 on:
-#  schedule:
-    #- cron: '*/15 * * * *'  # Every 15 minutes UTC
-  workflow_dispatch:  # Allows manual run
+  schedule:
+    - cron: '*/15 10-21 * * FRI,SAT,SUN'
+  workflow_dispatch:
 
 concurrency:
   group: np-pl-tracker  # all runs in this group are mutually exclusive
