@@ -30,7 +30,7 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install --with-deps
 
-      - name: Run PL game checker (Playwright --no-sandbox)
+      - name: Run PL game checker
         env:
           TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
           TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
@@ -39,4 +39,4 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python -m playwright run python check_no_pl_game.py --browser chromium -- --no-sandbox
+          python check_no_pl_game.py
