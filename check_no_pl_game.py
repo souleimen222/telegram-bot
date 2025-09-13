@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 import subprocess
 from sofascore_wrapper.api import SofascoreAPI
+import os
 
 PREMIER_LEAGUE_TEAMS = {
     "Manchester City", "Manchester United", "Liverpool", "Arsenal",
@@ -36,7 +37,10 @@ async def check_pl_games():
 
                 
                 # Run your goal_no_pl.py script
-                subprocess.run(["python", "goal_no_pl.py"])
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                goal_script = os.path.join(script_dir, "goal_no_pl.py")
+
+                subprocess.run(["python", goal_script])
                 break  # stop after triggering once
             
     finally:
