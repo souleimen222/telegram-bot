@@ -273,6 +273,7 @@ async def main():
     print("Starting Premier League live match tracker...")
     runtime_minutes = 3*60+15  # 3:15 hours
     start_time = time.time()
+    old_pl_ids=[]
     try:
         
         while True:
