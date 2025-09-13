@@ -283,7 +283,7 @@ async def main():
                 break
 
             matches = await get_today_matches(api)
-
+            
             now_ts = int(time.time())  # current Unix timestamp
             now_matches = [m for m in matches if now_ts - 2.5*3600 <= m.get("startTimestamp", 0) <= now_ts + 1*3600]
 
@@ -297,8 +297,10 @@ async def main():
                 old_pl_ids=new_pl_ids
 
                 if pl_matches:
-                    tasks = [handle_match(api, match) for match in pl_matches]
-                    await asyncio.gather(*tasks)
+                    for match in pl_matches:
+                        await handle_match(api, match)  # handle one match at a time
+                        await asyncio.sleep(2)  # small delay to avoid flooding
+
 
                 else:
                     print("No  Premier League matches right now.")
@@ -313,4 +315,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
