@@ -32,7 +32,7 @@ async def check_pl_games():
             if not start_ts:
                 continue
 
-            if(home in PREMIER_LEAGUE_TEAMS or away in PREMIER_LEAGUE_TEAMS) and   abs(start_ts - now_ts) <= time_window_seconds and start_ts>=now_ts:#and (match["tournament"]["name"] != "Premier League")
+            if(home in PREMIER_LEAGUE_TEAMS or away in PREMIER_LEAGUE_TEAMS) and   abs(start_ts - now_ts) <= time_window_seconds and start_ts + 60*15>=now_ts:#and (match["tournament"]["name"] != "Premier League")
                 print(f"Premier League match detected: {home} vs {away} at {datetime.utcfromtimestamp(start_ts)} UTC")
 
                 
