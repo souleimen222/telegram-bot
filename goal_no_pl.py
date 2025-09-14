@@ -142,15 +142,14 @@ async def check_incidents(api, match):
         if not inc_id or inc_id in seen_incidents:
             continue
 
-        if incident_type == "goal" or incident_type == "penalty" :
-            await asyncio.sleep(15)
-
+        if incident_type in ["goal", "penalty"]:
+            await asyncio.sleep(20)
             data = await api._get(f"/event/{match_id}/incidents")
             updated_inc = next((i for i in data.get("incidents", []) if i.get("id") == inc_id), None)
             if not updated_inc:
                 continue
         else:
-            updated_inc=inc
+            updated_inc = inc
 
         seen_incidents.add(inc_id)
         minute = updated_inc.get("time", {}).get("minute") if isinstance(updated_inc.get("time"), dict) else updated_inc.get("time")
@@ -158,15 +157,21 @@ async def check_incidents(api, match):
             minute = updated_inc.get("minute", "?")
 
         incident_type = updated_inc.get("incidentType")
+        incident_class = updated_inc.get("incidentClass", "")
+
         scorer = clean_name(updated_inc.get("playerName") or updated_inc.get("player", {}).get("shortName", ""))
         assist = clean_name(updated_inc.get("assist1", {}).get("shortName") if "assist1" in updated_inc else "")
+
+        # Mark own goals
+        if incident_type == "goal" and incident_class == "ownGoal":
+            scorer = f"{scorer}  (OG)" if scorer else "(OG)"
 
         score = f'{home_team} {updated_inc.get("homeScore")}-{updated_inc.get("awayScore")} {away_team} ({minute}")'
         hashtags = format_hashtags(home_code, away_code, tournament_name)
 
         if incident_type == "goal":
             text = f"⚽️ GOAL: {scorer}" if scorer else "⚽️ GOAL:-"
-            if assist:
+            if assist :  # no assist for OG
                 text += f"\n🅰️ Assist: {assist}"
             else:
                 text += f"\n🅰️ Assist:-"
@@ -209,13 +214,18 @@ async def check_half_time(api, match):
             if inc.get("incidentType") == "goal":
                 scorer = clean_name(inc.get("player", {}).get("shortName", ""))
                 assist = clean_name(inc.get("assist1", {}).get("shortName", ""))
+
+                # ✅ mark own goals using incidentClass
+                if inc.get("incidentClass") == "ownGoal":
+                    scorer += " (OG)"
+
                 if scorer:
                     line = f"⚽️ {scorer}"
                     if assist:
                         line += f" | 🅰️ {assist}"
                     goals_lines.append(line)
 
-        goals_text = "\n".join(goals_lines) if goals_lines else "No goals recorded."
+        goals_text = "\n".join(goals_lines) if goals_lines else ""
         score_line = f"{home_team} {home_score}-{away_score} {away_team}"
         hashtags = format_hashtags(home_code, away_code, tournament_name)
 
@@ -248,18 +258,24 @@ async def check_full_time(api, match):
             if inc.get("incidentType") == "goal":
                 scorer = clean_name(inc.get("player", {}).get("shortName", ""))
                 assist = clean_name(inc.get("assist1", {}).get("shortName", ""))
+
+                # ✅ mark own goals
+                if inc.get("incidentClass") == "ownGoal":
+                    scorer += " (OG)"
+
                 if scorer:
                     line = f"⚽️ {scorer}"
                     if assist:
                         line += f" | 🅰️ {assist}"
                     goals_lines.append(line)
 
-        goals_text = "\n".join(goals_lines) if goals_lines else "No goals recorded."
+        goals_text = "\n".join(goals_lines) if goals_lines else ""
         score_line = f"{home_team} {home_score}-{away_score} {away_team}"
         hashtags = format_hashtags(home_code, away_code, tournament_name)
 
         text = f"🏁 FT: {score_line}\n\n{goals_text}\n\n{hashtags}"
         post(text)
+
 
 # And define handle_match like:
 async def handle_match(api, match):
