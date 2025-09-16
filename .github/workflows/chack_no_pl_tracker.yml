@@ -3,7 +3,7 @@ name: Check no PL Games
 on:
   schedule:
     # Tue, Wed, Thu from 17:00 to 21:59 UTC (every 15 min)
-    - cron: "*/15 17-21 * * TUE,WED,THU"
+    - cron: "*/15 15-20 * * TUE,WED,THU"
 
     # Sat & Sun from 10:00 to 21:59 UTC (every 15 min)
     - cron: "*/15 10-21 * * SAT,SUN"
