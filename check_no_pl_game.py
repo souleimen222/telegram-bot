@@ -27,12 +27,16 @@ async def check_pl_games():
         for match in events:
             home = match.get("homeTeam", {}).get("name")
             away = match.get("awayTeam", {}).get("name")
+            
+            home_gender = match.get("homeTeam", {}).get("gender")
+            away_gender = match.get("awayTeam", {}).get("gender")
+
             start_ts = match.get("startTimestamp")
             
             if not start_ts:
                 continue
 
-            if(home in PREMIER_LEAGUE_TEAMS or away in PREMIER_LEAGUE_TEAMS) and   abs(start_ts - now_ts) <= time_window_seconds and start_ts + 60*15>=now_ts:#and (match["tournament"]["name"] != "Premier League")
+            if(home in PREMIER_LEAGUE_TEAMS or away in PREMIER_LEAGUE_TEAMS) and home_gender == "M" and away_gender == "M" and   abs(start_ts - now_ts) <= time_window_seconds and start_ts + 60*15>=now_ts:#and (match["tournament"]["name"] != "Premier League")
                 print(f"Premier League match detected: {home} vs {away} at {datetime.utcfromtimestamp(start_ts)} UTC")
 
                 

@@ -304,7 +304,15 @@ async def main():
             now_matches = [m for m in matches if now_ts - 2.5*3600 <= m.get("startTimestamp", 0) <= now_ts + 1*3600]
 
             if  now_matches:
-                pl_matches = [m for m in now_matches if m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS]
+                pl_matches = [
+                    m for m in now_matches
+                    if (
+                        (m["homeTeam"]["name"] in PREMIER_LEAGUE_TEAMS or m["awayTeam"]["name"] in PREMIER_LEAGUE_TEAMS)
+                        and m["homeTeam"].get("gender") == "M"
+                        and m["awayTeam"].get("gender") == "M"
+                    )
+                ]
+                    
                 #pl_matches = [m for m in pl_matches if m["tournament"]["name"] != "Premier League"]
 
                 new_pl_ids = [match["id"] for match in pl_matches]
