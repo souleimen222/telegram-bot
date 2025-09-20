@@ -2,9 +2,11 @@ name: Check no PL Games
 
 on:
   schedule:
-    - cron: '0 12 * * FRI,SAT,SUN'
+    # Tue, Wed, Thu from 17:00 to 21:59 (every 15 min)
+    - cron: "*/15 15-19 * * TUE,WED,THU"
 
-  #   - cron: '*/15 10-21 * * FRI,SAT,SUN'
+    # Sat & Sun from 10:00 to 21:59 (every 15 min)
+    - cron: "*/15 10-21 * * SAT,SUN"
   workflow_dispatch:
 
 concurrency:
